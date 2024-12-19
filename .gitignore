@@ -1,0 +1,6 @@
+__*
+build
+.pio
+.vscode
+logs
+lib
