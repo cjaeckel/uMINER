@@ -20,108 +20,106 @@ nvMemory::~nvMemory()
 /// @brief Save settings to config file on SPIFFS
 /// @param TSettings* Settings to be saved.
 /// @return true on success
-bool nvMemory::saveConfig(TSettings* Settings)
-{
-    if (init())
-    {
-        // Save Config in JSON format
-        Serial.println(F("SPIFS: Saving configuration."));
+bool nvMemory::saveConfig(TSettings* Settings) {
+    if (!init()) return false;
 
-        // Create a JSON document
-        StaticJsonDocument<512> json;
-        json[JSON_SPIFFS_KEY_POOLURL] = Settings->PoolAddress;
-        json[JSON_SPIFFS_KEY_POOLPORT] = Settings->PoolPort;
-        json[JSON_SPIFFS_KEY_POOLPASS] = Settings->PoolPassword;
-        json[JSON_SPIFFS_KEY_WALLETID] = Settings->BtcWallet;
-        json[JSON_SPIFFS_KEY_TIMEZONE] = Settings->Timezone;
-        json[JSON_SPIFFS_KEY_STATS2NV] = Settings->saveStats;
-        json[JSON_SPIFFS_KEY_INVCOLOR] = Settings->invertColors;
+    // Save Config in JSON format
+    Serial.println(F("SPIFS: Saving configuration."));
 
-        // Open config file
-        File configFile = SPIFFS.open(JSON_CONFIG_FILE, "w");
-        if (!configFile)
-        {
-            // Error, file did not open
-            Serial.println("SPIFS: Failed to open config file for writing");
-            return false;
-        }
+    // Create a JSON document
+    StaticJsonDocument<512> json;
+    json[JSON_SPIFFS_KEY_SSID]      = Settings->wifiSSID;
+    json[JSON_SPIFFS_KEY_PWD]       = Settings->wifiPwd;
+    json[JSON_SPIFFS_KEY_POOLURL]   = Settings->PoolAddress;
+    json[JSON_SPIFFS_KEY_POOLPORT]  = Settings->PoolPort;
+    json[JSON_SPIFFS_KEY_POOLPASS]  = Settings->PoolPassword;
+    json[JSON_SPIFFS_KEY_WALLETID]  = Settings->BtcWallet;
+    json[JSON_SPIFFS_KEY_TIMEZONE]  = Settings->Timezone;
+    json[JSON_SPIFFS_KEY_STATS2NV]  = Settings->saveStats;
+    json[JSON_SPIFFS_KEY_INVCOLOR]  = Settings->invertColors;
 
-        // Serialize JSON data to write to file
-        serializeJsonPretty(json, Serial);
-        Serial.print('\n');
-        if (serializeJson(json, configFile) == 0)
-        {
-            // Error writing file
-            Serial.println(F("SPIFS: Failed to write to file"));
-            return false;
-        }
-        // Close file
-        configFile.close();
-        return true;
-    };
-    return false;
+    // Open config file
+    File configFile = SPIFFS.open(JSON_CONFIG_FILE, "w");
+    if (!configFile) {
+        // Error, file did not open
+        Serial.println("SPIFS: Failed to open config file for writing");
+        return false;
+    }
+
+    // Serialize JSON data to write to file
+    serializeJsonPretty(json, Serial);
+    Serial.print('\n');
+    size_t sz = serializeJson(json, configFile);
+    if (sz == 0) {
+        // Error writing file
+        Serial.println(F("SPIFS: Failed to write to file"));
+    }
+    // Close file
+    configFile.close();
+    return (sz > 0);
 }
 
 /// @brief Load settings from config file located in SPIFFS.
 /// @param TSettings* Struct to update with new settings.
 /// @return true on success
-bool nvMemory::loadConfig(TSettings* Settings)
-{
+bool nvMemory::loadConfig(TSettings* Settings) {
     // Uncomment if we need to format filesystem
     // SPIFFS.format();
 
     // Load existing configuration file
     // Read configuration from FS json
 
-    if (init())
-    {
-        if (SPIFFS.exists(JSON_CONFIG_FILE))
-        {
-            // The file exists, reading and loading
-            File configFile = SPIFFS.open(JSON_CONFIG_FILE, "r");
-            if (configFile)
-            {
-                Serial.println("SPIFS: Loading config file");
-                StaticJsonDocument<512> json;
-                DeserializationError error = deserializeJson(json, configFile);
-                configFile.close();
-                serializeJsonPretty(json, Serial);
-                Serial.print('\n');
-                if (!error)
-                {
-                    Settings->PoolAddress = json[JSON_SPIFFS_KEY_POOLURL] | Settings->PoolAddress;
-                    Settings->PoolPassword= json[JSON_SPIFFS_KEY_POOLPASS] | Settings->PoolPassword;
-                    Settings->BtcWallet= json[JSON_SPIFFS_KEY_WALLETID] | Settings->BtcWallet;
-                    if (json.containsKey(JSON_SPIFFS_KEY_POOLPORT))
-                        Settings->PoolPort = json[JSON_SPIFFS_KEY_POOLPORT].as<int>();
-                    if (json.containsKey(JSON_SPIFFS_KEY_TIMEZONE))
-                        Settings->Timezone = json[JSON_SPIFFS_KEY_TIMEZONE].as<int>();
-                    if (json.containsKey(JSON_SPIFFS_KEY_STATS2NV))
-                        Settings->saveStats = json[JSON_SPIFFS_KEY_STATS2NV].as<bool>();
-                    if (json.containsKey(JSON_SPIFFS_KEY_INVCOLOR)) {
-                        Settings->invertColors = json[JSON_SPIFFS_KEY_INVCOLOR].as<bool>();
-                    } else {
-                        Settings->invertColors = false;
-                    }
-                    return true;
-                }
-                else
-                {
-                    // Error loading JSON data
-                    Serial.println("SPIFS: Error parsing config file!");
-                }
-            }
-            else
-            {
-                Serial.println("SPIFS: Error opening config file!");
-            }
-        }
-        else
-        {
-            Serial.println("SPIFS: No config file available!");
-        }
+    if (!init()) return false;
+    if (!SPIFFS.exists(JSON_CONFIG_FILE)) {
+        Serial.println("SPIFS: No config file available!");
+        return false;
     }
-    return false;
+
+    // The file exists, reading and loading
+    File configFile = SPIFFS.open(JSON_CONFIG_FILE, "r");
+    if (!configFile) {
+        Serial.println("SPIFS: Error opening config file!");
+        return false;
+    }
+
+    Serial.println("SPIFS: Loading config file");
+    StaticJsonDocument<512> json;
+    DeserializationError error = deserializeJson(json, configFile);
+    configFile.close();
+    serializeJsonPretty(json, Serial);
+    Serial.print('\n');
+    if (error) {
+        // Error loading JSON data
+        Serial.println("SPIFS: Error parsing config file!");
+        return false;
+    }
+
+    Settings->wifiSSID = json[JSON_SPIFFS_KEY_SSID] | Settings->wifiSSID;
+    Settings->wifiPwd = json[JSON_SPIFFS_KEY_PWD] | Settings->wifiPwd;
+    auto altWifi = json[JSON_SPIFFS_KEY_ALTWIFI].as<JsonArray>();
+    if (altWifi) {
+      auto cred = altWifi[0].as<JsonObject>();
+      Settings->altWifi[0].SSID = cred["SSID"] | Settings->altWifi[0].SSID;
+      Settings->altWifi[0].Pwd = cred["Pwd"] | Settings->altWifi[0].Pwd;
+      cred = altWifi[1].as<JsonObject>();
+      Settings->altWifi[1].SSID = cred["SSID"] | Settings->altWifi[1].SSID;
+      Settings->altWifi[1].Pwd = cred["Pwd"] | Settings->altWifi[1].Pwd;
+    }
+    Settings->PoolAddress = json[JSON_SPIFFS_KEY_POOLURL] | Settings->PoolAddress;
+    Settings->PoolPassword= json[JSON_SPIFFS_KEY_POOLPASS] | Settings->PoolPassword;
+    Settings->BtcWallet= json[JSON_SPIFFS_KEY_WALLETID] | Settings->BtcWallet;
+    if (json.containsKey(JSON_SPIFFS_KEY_POOLPORT))
+        Settings->PoolPort = json[JSON_SPIFFS_KEY_POOLPORT].as<int>();
+    if (json.containsKey(JSON_SPIFFS_KEY_TIMEZONE))
+        Settings->Timezone = json[JSON_SPIFFS_KEY_TIMEZONE].as<int>();
+    if (json.containsKey(JSON_SPIFFS_KEY_STATS2NV))
+        Settings->saveStats = json[JSON_SPIFFS_KEY_STATS2NV].as<bool>();
+    if (json.containsKey(JSON_SPIFFS_KEY_INVCOLOR)) {
+        Settings->invertColors = json[JSON_SPIFFS_KEY_INVCOLOR].as<bool>();
+    } else {
+        Settings->invertColors = false;
+    }
+    return true;
 }
 
 /// @brief Delete config file from SPIFFS

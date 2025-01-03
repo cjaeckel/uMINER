@@ -31,6 +31,9 @@
 #define JSON_KEY_INVCOLOR	"invertColors"
 
 // JSON config file SPIFFS (different for backward compatibility with existing devices)
+#define JSON_SPIFFS_KEY_SSID		  "SSID"
+#define JSON_SPIFFS_KEY_PWD		    "wifiPwd"
+#define JSON_SPIFFS_KEY_ALTWIFI   "altWifi"
 #define JSON_SPIFFS_KEY_POOLURL		"poolString"
 #define JSON_SPIFFS_KEY_POOLPORT	"portNumber"
 #define JSON_SPIFFS_KEY_POOLPASS	"poolPassword"
@@ -39,12 +42,23 @@
 #define JSON_SPIFFS_KEY_STATS2NV	"saveStatsToNVS"
 #define JSON_SPIFFS_KEY_INVCOLOR	"invertColors"
 
+struct WifiCred {
+  WifiCred() {};
+  WifiCred(const String &s, const String &p) {
+    SSID = s;
+    Pwd = p;
+  };
+  String SSID = "";
+  String Pwd = "";
+};
+
 // settings
-struct TSettings
-{
-	String WifiSSID= DEFAULT_SSID;
-	String WifiPW= DEFAULT_WIFIPW;
-	String PoolAddress= DEFAULT_POOLURL;
+struct TSettings {
+  //backward compatibility
+	String wifiSSID= DEFAULT_SSID;
+	String wifiPwd= DEFAULT_WIFIPW;
+  WifiCred altWifi[2];
+  String PoolAddress= DEFAULT_POOLURL;
 	String BtcWallet= DEFAULT_WALLETID;
 	String PoolPassword= DEFAULT_POOLPASS;
 	int PoolPort{ DEFAULT_POOLPORT };
@@ -52,5 +66,6 @@ struct TSettings
 	bool saveStats{ DEFAULT_SAVESTATS };
 	bool invertColors{ DEFAULT_INVERTCOLORS };
 };
+
 
 #endif // _STORAGE_H_

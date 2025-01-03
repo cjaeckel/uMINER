@@ -8,7 +8,7 @@
 #include <OneButton.h>
 
 #include "mbedtls/md.h"
-#include "wManager.h"
+#include "Configuration.h"
 #include "mining.h"
 #include "monitor.h"
 #include "drivers/displays/display.h"
@@ -24,6 +24,7 @@
 //15 minutes WDT for miner task
 #define WDT_MINER_TIMEOUT 900
 
+  /**********************⚡ GLOBAL Vars *******************************/
 #ifdef PIN_BUTTON_1
   OneButton button1(PIN_BUTTON_1);
 #endif
@@ -45,18 +46,16 @@ extern monitor_data mMonitor;
 #else
   SDCard SDCrd = SDCard();
 #endif
+  TSettings Settings;
 
-/**********************⚡ GLOBAL Vars *******************************/
+  unsigned long start = millis();
+  const char *ntpServer = "pool.ntp.org";
 
-unsigned long start = millis();
-const char* ntpServer = "pool.ntp.org";
+  using namespace std::placeholders;  // for _1, _2, _3...
 
-//void runMonitor(void *name);
-
-/********* INIT *****/
-void setup()
-{
-      //Init pin 15 to eneble 5V external power (LilyGo bug)
+  /********* INIT *****/
+  void setup() {
+    // Init pin 15 to eneble 5V external power (LilyGo bug)
   #ifdef PIN_ENABLE5V
       pinMode(PIN_ENABLE5V, OUTPUT);
       digitalWrite(PIN_ENABLE5V, HIGH);
@@ -81,9 +80,6 @@ void setup()
   dsplButton.btnDblClick = alternateScreenRotation;
   dsplButton.btnLongPress = handleDisplayAdjust;
 
-  screenButton.btnClick = switchToNextScreen;
-  screenButton.btnLongPress = reset_configuration;
-
   /******** INIT μMINER ************/
   Serial.println("uMINER starting......");
 
@@ -102,8 +98,13 @@ void setup()
   SDCrd.initSDcard();
 #endif
 
-  /******** INIT WIFI ************/
-  init_WifiManager();
+  /******** INIT Configuration (optional from WIFI AP portal...) ************/
+  Configuration config(Settings);
+  screenButton.btnClick = switchToNextScreen;
+  auto fn= std::bind(&Configuration::Reset, &config, _1, _2);
+  screenButton.btnLongPress = fn;
+  if (!config.VerifyNetwork())
+    config.Configure();
 
   /******** CREATE TASK TO PRINT SCREEN *****/
   //tft.pushImage(0, 0, MinerWidth, MinerHeight, MinerScreen);
@@ -146,11 +147,6 @@ void loop() {
   // keep watching the push buttons:
   dsplButton.Update();
   screenButton.Update();
-#ifdef PIN_BUTTON_2
-  // button2.tick();
-#endif
-
-  wifiManagerProcess(); // avoid delays() in loop when non-blocking and other long running code
 
   vTaskDelay(MAIN_LOOP_INTERVAL / portTICK_PERIOD_MS);
 }

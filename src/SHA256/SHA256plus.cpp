@@ -196,14 +196,17 @@ IRAM_ATTR bool SHA256d(mining_SHA256_ctx* midstate, uint8_t* dataIn, uint8_t* do
     uint32_t temp1, temp2;
     uint8_t temp3, temp4;
     uint32_t* buffer32;
+
     //*********** Init 1rst SHA ***********
+    uint32_t W[16] = {
+      GET_UINT32_BE(dataIn, 0), GET_UINT32_BE(dataIn, 4),
+      GET_UINT32_BE(dataIn, 8), GET_UINT32_BE(dataIn, 12), 0x80000000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 640
+    };
 
-    uint32_t W[16] = { GET_UINT32_BE(dataIn, 0), GET_UINT32_BE(dataIn, 4),
-        GET_UINT32_BE(dataIn, 8), GET_UINT32_BE(dataIn, 12), 0x80000000, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 640};
-
-    uint32_t A[8] = { midstate->digest[0], midstate->digest[1], midstate->digest[2], midstate->digest[3],
-        midstate->digest[4], midstate->digest[5], midstate->digest[6], midstate->digest[7] };
+    uint32_t A[8] = {
+      midstate->digest[0], midstate->digest[1], midstate->digest[2], midstate->digest[3], midstate->digest[4],
+      midstate->digest[5], midstate->digest[6], midstate->digest[7]
+    };
 
     union {
         uint32_t num;
