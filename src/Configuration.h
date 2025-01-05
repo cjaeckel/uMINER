@@ -16,9 +16,9 @@ private:
   WiFiManagerParameter tmzone_fld {"TimeZone", "TimeZone fromUTC (-12/+12)"};
   WiFiManagerParameter poolPwd_fld {"Poolpassword - Optional", "Pool password"};
   void handleConfigStart();
-  void handleConfigInput();
 
 public:
+  void handleConfigInput();
   Configuration(TSettings &settings);
   bool VerifyNetwork();
   void Configure();

@@ -20,10 +20,10 @@ void ButtonCntrl::Update() {
       if (   0 == prevPress
           || startPress - prevPress > BTN_DOUBLE_CLICK_DELAY) {
         prevPress = startPress;
-        if (nullptr != btnClick) (*btnClick)();   // single click
+        if (nullptr != Click) Click();   // single click
       }
       else {
-        if (nullptr != btnDblClick) (*btnDblClick)();   // double click
+        if (nullptr != DblClick) DblClick();   // double click
         prevPress = 0;
       }
     }
@@ -34,8 +34,8 @@ void ButtonCntrl::Update() {
   // button still pressed
   if (0 == startPress) return;    //awaiting new press
   if (elapsed < BTN_SINGLE_CLICK_DELAY) return;    //wait for long press
-  if (   nullptr != btnLongPress
-      && (*btnLongPress)(elapsed - BTN_SINGLE_CLICK_DELAY, IVAL)) return;   //keep button pressed
+  if (   nullptr != LongPress
+      && LongPress(elapsed - BTN_SINGLE_CLICK_DELAY, IVAL)) return;   //keep button pressed
 
   Serial.println("Long press abort");
   startPress = 0;

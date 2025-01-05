@@ -5,7 +5,6 @@
 #include <WiFi.h>
 #include <WebServer.h>
 #include <esp_task_wdt.h>
-#include <OneButton.h>
 
 #include "mbedtls/md.h"
 #include "Configuration.h"
@@ -76,9 +75,9 @@ extern monitor_data mMonitor;
   //disableCore1WDT();
 
   // Setup the buttons
-  dsplButton.btnClick = alternateScreenState;
-  dsplButton.btnDblClick = alternateScreenRotation;
-  dsplButton.btnLongPress = handleDisplayAdjust;
+  dsplButton.Click = alternateScreenState;
+  dsplButton.DblClick = alternateScreenRotation;
+  dsplButton.LongPress = handleDisplayAdjust;
 
   /******** INIT μMINER ************/
   Serial.println("uMINER starting......");
@@ -100,25 +99,18 @@ extern monitor_data mMonitor;
 
   /******** INIT Configuration (optional from WIFI AP portal...) ************/
   Configuration config(Settings);
-  screenButton.btnClick = switchToNextScreen;
-  auto fn= std::bind(&Configuration::Reset, &config, _1, _2);
-  screenButton.btnLongPress = fn;
+  screenButton.Click = switchToNextScreen;
+  screenButton.LongPress = std::bind(&Configuration::Reset, &config, _1, _2);
   if (!config.VerifyNetwork())
     config.Configure();
 
   /******** CREATE TASK TO PRINT SCREEN *****/
-  //tft.pushImage(0, 0, MinerWidth, MinerHeight, MinerScreen);
   // Higher prio monitor task
-  Serial.println("");
-  Serial.println("Initiating tasks...");
+  Serial.println("\nInitiating tasks...");
   BaseType_t res1 = xTaskCreatePinnedToCore(runMonitor, "Monitor", 10000, nullptr, 4, NULL, 1);
   BaseType_t res2 = xTaskCreatePinnedToCore(runStratumWorker, "Stratum", 15000, nullptr, 3, NULL, 1);
 
   /******** CREATE MINER TASKS *****/
-  //for (size_t i = 0; i < THREADS; i++) {
-  //  char *name = (char*) malloc(32);
-  //  sprintf(name, "(%d)", i);
-
   // Start mining tasks
   TaskHandle_t minerTask1, minerTask2 = NULL;
   xTaskCreate(runMiner, "Miner0", 6000, (void*)0, 1, &minerTask1);

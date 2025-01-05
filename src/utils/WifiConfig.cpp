@@ -49,7 +49,7 @@ bool WifiConfig::TryConnect(const TSettings &settings) {
       //connected
       _lastconxresult = WL_CONNECTED;
       DEBUG_WM(F("TryConnect: Connected in"), (String)((millis()-_startconn)) + " ms");
-      DEBUG_WM(F("STA IP: "), WiFi.localIP());
+      DEBUG_WM(F("STA IP: "), WiFi.localIP().toString());
       if (_hostname != "") DEBUG_WM(F("Hostname: STA: "), getWiFiHostname());
       return true; // connected success
     }

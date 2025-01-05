@@ -87,6 +87,8 @@ void Configuration::Configure() {
   wifiCfg.setClass("invert"); // dark theme
 
   // Set config save notify callback
+  auto fn = std::bind(&Configuration::handleConfigInput, this);
+  wifiCfg.setSaveParamsCallback(fn);
   wifiCfg.setSaveParamsCallback(std::bind(&Configuration::handleConfigInput, this));
 
   // Set callback that gets when enters Access Point mode
