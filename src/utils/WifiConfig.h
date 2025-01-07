@@ -12,6 +12,11 @@ public:
    */
   bool TryConnect(const TSettings &settings);
 
+  /* These are getting set by WiFiManager::handleWifiSave()
+   */
+  String InputSsid() { return _ssid; }
+  String InputPwd() { return _pass; }
+
 protected:
   /* Extract a std::vector<WifiCred> from settings.
    */

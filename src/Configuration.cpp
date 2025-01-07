@@ -26,6 +26,10 @@ Configuration::Configuration(TSettings &set) : settings(set) {
   }
   SDCrd.terminate();  // Free the memory from SDCard class
 
+  ssid2_fld.setValue(settings.altWifi[0].SSID.c_str(), 20);
+  pwd2_fld.setValue(settings.altWifi[0].Pwd.c_str(), 20);
+  ssid3_fld.setValue(settings.altWifi[1].SSID.c_str(), 20);
+  pwd3_fld.setValue(settings.altWifi[1].Pwd.c_str(), 20);
   pool_fld.setValue(settings.PoolAddress.c_str(), 80);
   poolPwd_fld.setValue(settings.PoolPassword.c_str(), 80);
   port_fld.setValue(String(settings.PoolPort).c_str(), 7);
@@ -54,6 +58,13 @@ void Configuration::handleConfigStart() {
 // Callback notifying us of the need to save configuration
 void Configuration::handleConfigInput() {
   Serial.println("Applying config input");
+  settings.wifiSSID = wifiCfg.InputSsid();
+  settings.wifiPwd = wifiCfg.InputPwd();
+  settings.altWifi[0].SSID = ssid2_fld.getValue();
+  settings.altWifi[0].Pwd = pwd2_fld.getValue();
+  settings.altWifi[1].SSID = ssid2_fld.getValue();
+  settings.altWifi[1].Pwd = pwd2_fld.getValue();
+
   settings.PoolAddress = pool_fld.getValue();
   settings.PoolPort = atoi(port_fld.getValue());
   settings.PoolPassword= poolPwd_fld.getValue();
@@ -87,14 +98,16 @@ void Configuration::Configure() {
   wifiCfg.setClass("invert"); // dark theme
 
   // Set config save notify callback
-  auto fn = std::bind(&Configuration::handleConfigInput, this);
-  wifiCfg.setSaveParamsCallback(fn);
   wifiCfg.setSaveParamsCallback(std::bind(&Configuration::handleConfigInput, this));
 
   // Set callback that gets when enters Access Point mode
   wifiCfg.setAPCallback(std::bind(&Configuration::handleConfigInput, this));
 
   // Add all defined parameters
+  wifiCfg.addParameter(&ssid2_fld);
+  wifiCfg.addParameter(&pwd2_fld);
+  wifiCfg.addParameter(&ssid3_fld);
+  wifiCfg.addParameter(&pwd3_fld);
   wifiCfg.addParameter(&pool_fld);
   wifiCfg.addParameter(&port_fld);
   wifiCfg.addParameter(&poolPwd_fld);

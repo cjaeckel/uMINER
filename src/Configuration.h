@@ -10,6 +10,10 @@ private:
   WifiConfig wifiCfg;
   nvMemory nvMem;
 
+  WiFiManagerParameter ssid2_fld {"SSID2", "SSID"};
+  WiFiManagerParameter pwd2_fld {"Pwd2", "pwd"};
+  WiFiManagerParameter ssid3_fld {"SSID3", "SSID"};
+  WiFiManagerParameter pwd3_fld {"Pwd3", "pwd"};
   WiFiManagerParameter pool_fld {"Poolurl", "Pool url"};
   WiFiManagerParameter port_fld {"Poolport", "Pool port"};
   WiFiManagerParameter btcAddr_fld {"btcAddress", "Your BTC address"};
