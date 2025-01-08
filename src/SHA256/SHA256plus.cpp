@@ -34,7 +34,6 @@
         | ((uint32_t)(b)[(i) + 3]))
 #endif
 
-//DRAM_ATTR static const uint32_t K[] = {
 DRAM_ATTR static const uint32_t K[64] = {
         0x428A2F98L, 0x71374491L, 0xB5C0FBCFL, 0xE9B5DBA5L, 0x3956C25BL,
         0x59F111F1L, 0x923F82A4L, 0xAB1C5ED5L, 0xD807AA98L, 0x12835B01L,

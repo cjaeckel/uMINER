@@ -199,6 +199,11 @@ String getSeconds(unsigned long tm= 0) {
   return seconds;
 }
 
+String getBestDifficulty() {
+  char pfx;
+  return numFormat("%.3g", best_diff, pfx) + pfx;
+}
+
 String getCurrentHashRate(unsigned long mElapsed) {
   char pfx;
   return numFormat("%.2f", (1.0 * (elapsedKHs * 1000)) / mElapsed, pfx);
@@ -206,9 +211,6 @@ String getCurrentHashRate(unsigned long mElapsed) {
 
 mining_data getMiningData(unsigned long mElapsed) {
   mining_data data;
-
-  char best_diff_string[16] = {0};
-  suffix_string(best_diff, best_diff_string, 16, 0);
 
   char timeMining[15] = {0};
   uint64_t secElapsed = upTime + (esp_timer_get_time() / 1000000);
@@ -223,7 +225,7 @@ mining_data getMiningData(unsigned long mElapsed) {
   data.totalKHashes = totalKHashes;
   data.currentHashRate = getCurrentHashRate(mElapsed);
   data.templates = templates;
-  data.bestDiff = best_diff_string;
+  data.bestDiff = getBestDifficulty();
   data.timeMining = timeMining;
   data.valids = valids;
   // data.temp = String(temperatureRead(), 0);
@@ -235,12 +237,10 @@ mining_data getMiningData(unsigned long mElapsed) {
 
 clock_data getClockData(unsigned long mElapsed) {
   clock_data data;
-  char best_diff_string[16] = {0};
-  suffix_string(best_diff, best_diff_string, 16, 0);
 
   data.completedShares = shares;
   data.currentHashRate = getCurrentHashRate(mElapsed);
-  data.bestDiff = best_diff_string;
+  data.bestDiff = getBestDifficulty();
   data.blockHeight = getBlockHeight();
   data.currentTime = getTime();
   data.currentSec = getSeconds();
@@ -292,7 +292,7 @@ void updatePoolData(status_data &poolData) {
     char fStr[16] = "";
     char pfx;
 
-    poolData.bestDiff = numFormat("%.2f", json["bestDifficulty"].as<double>(), pfx) + pfx;
+    poolData.bestDiff = numFormat("%.3g", json["bestDifficulty"].as<double>(), pfx) + pfx;
 
     if (0 != json["workersCount"].as<int>()) {
       JsonObjectConst doc = json["workers"].as<JsonArrayConst>()[0];

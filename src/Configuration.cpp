@@ -23,9 +23,14 @@ Configuration::Configuration(TSettings &set) : settings(set) {
       //No config file on SD card.
       SDCrd.SD2nvMemory(&nvMem, &settings); // reboot on success.
     }
+    SDCrd.terminate();  // Free the memory from SDCard class
   }
-  SDCrd.terminate();  // Free the memory from SDCard class
 
+  if (settings.wifiSSID == "") {    // backward data
+    Serial.println("Loading SSID from wifiCfg");
+    settings.wifiSSID = wifiCfg.getWiFiSSID();
+    settings.wifiPwd = wifiCfg.getWiFiPass();
+  }
   ssid2_fld.setValue(settings.altWifi[0].SSID.c_str(), 20);
   pwd2_fld.setValue(settings.altWifi[0].Pwd.c_str(), 20);
   ssid3_fld.setValue(settings.altWifi[1].SSID.c_str(), 20);
@@ -62,8 +67,8 @@ void Configuration::handleConfigInput() {
   settings.wifiPwd = wifiCfg.InputPwd();
   settings.altWifi[0].SSID = ssid2_fld.getValue();
   settings.altWifi[0].Pwd = pwd2_fld.getValue();
-  settings.altWifi[1].SSID = ssid2_fld.getValue();
-  settings.altWifi[1].Pwd = pwd2_fld.getValue();
+  settings.altWifi[1].SSID = ssid3_fld.getValue();
+  settings.altWifi[1].Pwd = pwd3_fld.getValue();
 
   settings.PoolAddress = pool_fld.getValue();
   settings.PoolPort = atoi(port_fld.getValue());
@@ -86,7 +91,7 @@ bool Configuration::VerifyNetwork() {
   }
 #endif
 
-  wifiCfg.setConnectTimeout(5); // how long to try to connect for before continuing
+  wifiCfg.setConnectTimeout(2); // how long to try to connect for before continuing
 
   return wifiCfg.TryConnect(settings);
 }
@@ -101,7 +106,7 @@ void Configuration::Configure() {
   wifiCfg.setSaveParamsCallback(std::bind(&Configuration::handleConfigInput, this));
 
   // Set callback that gets when enters Access Point mode
-  wifiCfg.setAPCallback(std::bind(&Configuration::handleConfigInput, this));
+  wifiCfg.setAPCallback(std::bind(&Configuration::handleConfigStart, this));
 
   // Add all defined parameters
   wifiCfg.addParameter(&ssid2_fld);

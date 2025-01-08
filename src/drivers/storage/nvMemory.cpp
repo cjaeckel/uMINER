@@ -30,7 +30,15 @@ bool nvMemory::saveConfig(TSettings* Settings) {
     StaticJsonDocument<512> json;
     json[JSON_SPIFFS_KEY_SSID]      = Settings->wifiSSID;
     json[JSON_SPIFFS_KEY_PWD]       = Settings->wifiPwd;
-    json[JSON_SPIFFS_KEY_POOLURL]   = Settings->PoolAddress;
+    auto altWifi = json.createNestedArray(JSON_SPIFFS_KEY_ALTWIFI);
+    auto cred = altWifi.createNestedObject();
+    cred["SSID"] = Settings->altWifi[0].SSID;
+    cred["Pwd"] = Settings->altWifi[0].Pwd;
+    cred = altWifi.createNestedObject();
+    cred["SSID"] = Settings->altWifi[1].SSID;
+    cred["Pwd"] = Settings->altWifi[1].Pwd;
+
+    json[JSON_SPIFFS_KEY_POOLURL] = Settings->PoolAddress;
     json[JSON_SPIFFS_KEY_POOLPORT]  = Settings->PoolPort;
     json[JSON_SPIFFS_KEY_POOLPASS]  = Settings->PoolPassword;
     json[JSON_SPIFFS_KEY_WALLETID]  = Settings->BtcWallet;

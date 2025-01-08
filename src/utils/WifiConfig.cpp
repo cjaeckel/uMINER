@@ -3,7 +3,7 @@
 #include "WifiConfig.h"
 
 bool WifiConfig::TryConnect(const TSettings &settings) {
-  DEBUG_WM(F("TryConnect..."));
+  Serial.println("TryConnect...");
 
   if(_hostname != "") {
     setupHostname(true);
@@ -45,18 +45,18 @@ bool WifiConfig::TryConnect(const TSettings &settings) {
 
   std::vector<WifiCred> wifiCreds = WifiCredentials(settings);
   for (WifiCred c : wifiCreds) {
+    Serial.printf("TryConnect: %s...\n", c.SSID.c_str());
     if (connectWifi(c.SSID, c.Pwd) == WL_CONNECTED) {
       //connected
       _lastconxresult = WL_CONNECTED;
-      DEBUG_WM(F("TryConnect: Connected in"), (String)((millis()-_startconn)) + " ms");
-      DEBUG_WM(F("STA IP: "), WiFi.localIP().toString());
-      if (_hostname != "") DEBUG_WM(F("Hostname: STA: "), getWiFiHostname());
+      Serial.printf("TryConnect: Connected in %d ms\n", millis()-_startconn);
+      Serial.printf("STA IP: %s\n", WiFi.localIP().toString().c_str());
+      if (_hostname != "") Serial.printf("Hostname: STA: %s\n", getWiFiHostname().c_str());
       return true; // connected success
     }
   }
 
-
-  DEBUG_WM(F("TryConnect: FAILED after "), (String)((millis()-_startconn)) + " ms");
+  Serial.printf("TryConnect: FAILED after %d ms\n", millis()-_startconn);
   return false;
 }
 
