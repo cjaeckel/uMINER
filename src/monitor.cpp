@@ -6,6 +6,7 @@
 #include <WiFiUdp.h>
 #include "mining.h"
 #include "utils.h"
+#include "SerialLog.h"
 #include "monitor.h"
 #include "drivers/storage/storage.h"
 #include "drivers/devices/device.h"
@@ -41,10 +42,10 @@ void setup_monitor(void){
     timeClient.begin();
 
     // Adjust offset depending on your zone
-    // GMT +2 in seconds (zona horaria de Europa Central)
-    timeClient.setTimeOffset(3600 * Settings.Timezone);
+    // GMT +2 in seconds (Europa Central)
+    timeClient.setTimeOffset(3600 * Settings.Timezone);   //***TODO: use time zone rule
 
-    Serial.println("TimeClient setup done");
+    logINF("TimeClient setup done\n");
 }
 
 String *getBTCaddress() {
@@ -60,7 +61,7 @@ void updateNetworkData(network_data &netData) {
 
   if (   WiFi.status() != WL_CONNECTED
       || (lastNetUpdate != 0 && (millis() - lastNetUpdate < UPDATE_NETWORK_min * 60 * 1000) )) return;
-  Serial.println("Starting updateNetworkData()...");
+  logDBG("Starting updateNetworkData()...\n");
 
   HTTPClient http;
   http.setTimeout(1000);
@@ -68,8 +69,7 @@ void updateNetworkData(network_data &netData) {
   try {
     if (   !http.begin(GET_MINERSTAT_COINS)
         || http.GET() != HTTP_CODE_OK) {
-      Serial.print("HTTP GET failed from: ");
-      Serial.println(GET_MINERSTAT_COINS);
+      logERR("HTTP GET failed from: %s\n", GET_MINERSTAT_COINS);
       return;
     }
 
@@ -114,8 +114,7 @@ String getBlockHeight(void){
   try {
     if (   !http.begin(getHeightAPI)
         || http.GET() != HTTP_CODE_OK) {
-      Serial.print("HTTP GET failed from: ");
-      Serial.println(getHeightAPI);
+      logERR("HTTP GET failed from: %s\n", getHeightAPI);
       return block;
     }
 
@@ -149,7 +148,7 @@ void getTime(unsigned long tm, unsigned long* currentHours, unsigned long* curre
     if (WiFi.status() == WL_CONNECTED && timeClient.update()) { //NTP call to get current time succeeded:
       lastTimeUpdate = millis();
       lastNTPTime = timeClient.getEpochTime(); // Most current NTP unix time (sec. since 1970)
-      Serial.print("TimeClient NTPupdateTime ");
+      logINF("TimeClient NTPupdateTime\n");
     }
   }
 
@@ -277,16 +276,16 @@ void updatePoolData(status_data &poolData) {
     if (p > 0) poolUrl= poolUrl.substring(0, p);
     poolUrl = GET_PUBLIC_POOL + poolUrl;
 
-    Serial.printf("+++ HTTP GET: %s\n", poolUrl.c_str());
+    logDBG("+++ HTTP GET: %s\n", poolUrl.c_str());
     int ret;
     if (   !http.begin(poolUrl)
         || (ret= http.GET()) != HTTP_CODE_OK) {
-      Serial.printf("+++ HTTP GET failed: %d\n", ret);
+      logERR("+++ HTTP GET failed: %d\n", ret);
       return;
     }
 
     String payload = http.getString();
-    Serial.println(payload);
+    logDBG("Payload:\n%s", payload);
     DynamicJsonDocument json(1024);
     deserializeJson(json, payload);
     char fStr[16] = "";
@@ -306,13 +305,17 @@ void updatePoolData(status_data &poolData) {
   }
   catch(...) {
     http.end();
-    Serial.println("+++ POOL UPDATE FAILED.");
+    logERR("+++ POOL UPDATE FAILED.\n");
     lastPoolUpdate = 0;
   }
 }
 
 status_data getMinerStatus(unsigned long elapsed) {
   static status_data data;
+  char pfx;
+  //Mem. status:
+  data.minFreeHeap= numFormat("%.3g", (double)ESP.getMinFreeHeap(), pfx) + pfx + 'B';
+  data.minStack= numFormat("%.3g", (double)uxTaskGetStackHighWaterMark(NULL), pfx) + pfx + 'B';
 
   data.currentHashRate= getCurrentHashRate(elapsed);
   data.cpuTemp = String(temperatureRead(), 0);

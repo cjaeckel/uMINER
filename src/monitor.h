@@ -42,7 +42,7 @@ enum MiningState {
   Hashing
 };
 
-typedef struct{
+typedef struct {
   uint8_t screen;
   bool rotation;
   MiningState MinerStatus;
@@ -83,6 +83,8 @@ typedef struct {
   String currentHashRate;
   String cpuTemp;
   String supplyVoltage;
+  String minFreeHeap;
+  String minStack;
   String NTPupdate;
   String poolIP;
   String poolUser;

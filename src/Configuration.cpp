@@ -5,6 +5,7 @@
 #include <WiFiManager.h>
 
 #include "Configuration.h"
+#include "SerialLog.h"
 #include "monitor.h"
 #include "drivers/storage/SDCard.h"
 #include "drivers/storage/nvMemory.h"
@@ -26,8 +27,8 @@ Configuration::Configuration(TSettings &set) : settings(set) {
     SDCrd.terminate();  // Free the memory from SDCard class
   }
 
-  if (settings.wifiSSID == "") {    // backward data
-    Serial.println("Loading SSID from wifiCfg");
+  if (settings.wifiSSID == "" || settings.wifiPwd == "") {    // backward data
+    logINF("Loading SSID from wifiCfg\n");
     settings.wifiSSID = wifiCfg.getWiFiSSID();
     settings.wifiPwd = wifiCfg.getWiFiPass();
   }
@@ -45,7 +46,7 @@ Configuration::Configuration(TSettings &set) : settings(set) {
 bool Configuration::Reset(int sinceMs, int interval) {
   if (sinceMs < 7000) return true;
 
-  Serial.println("Erasing Config, restarting");
+  logWRN("Erasing Config, restarting...\n");
   nvMem.deleteConfig();
   resetStat();
   wifiCfg.resetSettings();
@@ -56,13 +57,13 @@ bool Configuration::Reset(int sinceMs, int interval) {
 
 // Handle AP start
 void Configuration::handleConfigStart() {
-  Serial.println("Config portal started");
+  logINF("Config portal started.\n");
   drawSetupScreen();
 }
 
 // Callback notifying us of the need to save configuration
 void Configuration::handleConfigInput() {
-  Serial.println("Applying config input");
+  logINF("Applying config input");
   settings.wifiSSID = wifiCfg.InputSsid();
   settings.wifiPwd = wifiCfg.InputPwd();
   settings.altWifi[0].SSID = ssid2_fld.getValue();
@@ -85,7 +86,7 @@ bool Configuration::VerifyNetwork() {
 #if defined(PIN_BUTTON_2)
   // Check if button2 is pressed to enter configMode with actual configuration
   if (!digitalRead(PIN_BUTTON_2)) {
-    Serial.println(F("Button pressed to force start config mode"));
+    logINF("Button pressed to force start config mode.\n");
     wifiCfg.setBreakAfterConfig(true); //Set to detect config edition and save
     return false;   //Indicate that a setup is required
   }

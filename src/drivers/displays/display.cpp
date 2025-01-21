@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include "SerialLog.h"
 #include "display.h"
 #include "mining.h"
 
@@ -31,14 +32,14 @@ void setDisplayBrightness(char value) {
 // Alternate screen state
 void alternateScreenState() {
   currentDisplayDriver->screenOn= currentDisplayDriver->alternateScreenState();
-  Serial.printf("New screen state: %d\n", (int)currentDisplayDriver->screenOn);
+  logINF("New screen state: %d\n", (int)currentDisplayDriver->screenOn);
 }
 
 // Alternate screen rotation
 void alternateScreenRotation() {
   alternateScreenState();
   currentDisplayDriver->alternateScreenRotation();
-  Serial.println("Screen rotate.");
+  logINF("Screen rotate.");
 }
 
 // Draw the loading screen

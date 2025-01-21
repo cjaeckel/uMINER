@@ -1,9 +1,10 @@
 
 #include "drivers/displays/display.h"
 #include "WifiConfig.h"
+#include "SerialLog.h"
 
 bool WifiConfig::TryConnect(const TSettings &settings) {
-  Serial.println("TryConnect...");
+  logINF("TryConnect...");
 
   if(_hostname != "") {
     setupHostname(true);
@@ -45,18 +46,18 @@ bool WifiConfig::TryConnect(const TSettings &settings) {
 
   std::vector<WifiCred> wifiCreds = WifiCredentials(settings);
   for (WifiCred c : wifiCreds) {
-    Serial.printf("TryConnect: %s...\n", c.SSID.c_str());
+    logINF("TryConnect: %s...\n", c.SSID.c_str());
     if (connectWifi(c.SSID, c.Pwd) == WL_CONNECTED) {
       //connected
       _lastconxresult = WL_CONNECTED;
-      Serial.printf("TryConnect: Connected in %d ms\n", millis()-_startconn);
-      Serial.printf("STA IP: %s\n", WiFi.localIP().toString().c_str());
-      if (_hostname != "") Serial.printf("Hostname: STA: %s\n", getWiFiHostname().c_str());
+      logINF("Connected in %d ms\n", millis()-_startconn);
+      logINF("STA IP: %s\n", WiFi.localIP().toString().c_str());
+      if (_hostname != "") logINF("Hostname: STA: %s\n", getWiFiHostname().c_str());
       return true; // connected success
     }
   }
 
-  Serial.printf("TryConnect: FAILED after %d ms\n", millis()-_startconn);
+  logERR("WiFi connect FAILED after %d ms\n", millis()-_startconn);
   return false;
 }
 
@@ -70,11 +71,8 @@ std::vector<WifiCred> WifiConfig::WifiCredentials(const TSettings &settings) {
 
 // Called when config mode launched
 static void configModeCallback(WiFiManager* myWiFiManager) {
-  Serial.println("Entered Configuration Mode");
+  logINF("Entered Configuration Mode\n");
   drawSetupScreen();
-  Serial.print("Config SSID: ");
-  Serial.println(myWiFiManager->getConfigPortalSSID());
-
-  Serial.print("Config IP Address: ");
-  Serial.println(WiFi.softAPIP());
+  logINF("Config SSID: %s\n", myWiFiManager->getConfigPortalSSID());
+  logINF("Config IP Address: %s\n", WiFi.softAPIP());
 }

@@ -1,6 +1,7 @@
 
 #include <Arduino.h>
 #include "utils.h"
+#include "SerialLog.h"
 #include "mining.h"
 #include "stratum.h"
 #include "mbedtls/sha256.h"
@@ -126,14 +127,14 @@ bool checkValid(unsigned char* hash, unsigned char* target) {
     }
   }
 
-  #ifdef DEBUG_MINING
+#ifdef DEBUG_MINING
   if (valid) {
-    Serial.print("\tvalid : ");
+    logDBG("\tvalid : ");
     for (size_t i = 0; i < 32; i++)
-        Serial.printf("%02x ", hash[i]);
-    Serial.println();
+        logDBG("%02x ", hash[i]);
+    logDBG("\n");
   }
-  #endif
+#endif
   return valid;
 }
 
@@ -192,7 +193,7 @@ miner_data calculateMiningData(mining_subscribe& mWorker, mining_job mJob){
     int zeros = (int) strtol(mJob.nbits.substring(0, 2).c_str(), 0, 16) - 3;
     memcpy(target + zeros - 2, mJob.nbits.substring(2).c_str(), mJob.nbits.length() - 2);
     target[TARGET_BUFFER_SIZE] = 0;
-    Serial.print("    target: "); Serial.println(target);
+    logINF("    target: %s\n", target);
 
     // bytearray target
     size_t size_target = to_byte_array(target, 32, mMiner.bytearray_target);
@@ -213,20 +214,20 @@ miner_data calculateMiningData(mining_subscribe& mWorker, mining_job mJob){
 
     //get coinbase - coinbase_hash_bin = hashlib.sha256(hashlib.sha256(binascii.unhexlify(coinbase)).digest()).digest()
     String coinbase = mJob.coinb1 + mWorker.extranonce1 + mWorker.extranonce2 + mJob.coinb2;
-    Serial.print("    coinbase: "); Serial.println(coinbase);
+    logINF("    coinbase: %s\n", coinbase.c_str());
     size_t str_len = coinbase.length()/2;
     uint8_t bytearray[str_len];
 
     size_t res = to_byte_array(coinbase.c_str(), str_len*2, bytearray);
 
-    #ifdef DEBUG_MINING
-    Serial.print("    extranonce2: "); Serial.println(mWorker.extranonce2);
-    Serial.print("    coinbase: "); Serial.println(coinbase);
-    Serial.print("    coinbase bytes - size: "); Serial.println(res);
+#ifdef DEBUG_MINING
+    logDBG("    extranonce2: %s\n", mWorker.extranonce2);
+    logDBG("    coinbase: %s\n", coinbase);
+    logDBG("    coinbase bytes - size: %d\n", res);
     for (size_t i = 0; i < res; i++)
-        Serial.printf("%02x", bytearray[i]);
-    Serial.println("---");
-    #endif
+        logDBG("%02x", bytearray[i]);
+    logDBG("---\n");
+#endif
 
     mbedtls_sha256_context ctx;
     mbedtls_sha256_init(&ctx);
@@ -243,12 +244,12 @@ miner_data calculateMiningData(mining_subscribe& mWorker, mining_job mJob){
     mbedtls_sha256_finish_ret(&ctx, shaResult);
     mbedtls_sha256_free(&ctx);
 
-    #ifdef DEBUG_MINING
-    Serial.print("    coinbase double sha: ");
+#ifdef DEBUG_MINING
+    logDBG("    coinbase double sha: ");
     for (size_t i = 0; i < 32; i++)
-        Serial.printf("%02x", shaResult[i]);
-    Serial.println("");
-    #endif
+        logDBG("%02x", shaResult[i]);
+    logDBG("\n");
+#endif
 
 
     // copy coinbase hash
@@ -260,21 +261,20 @@ miner_data calculateMiningData(mining_subscribe& mWorker, mining_job mJob){
         uint8_t bytearray[32];
         size_t res = to_byte_array(merkle_element, 64, bytearray);
 
-        #ifdef DEBUG_MINING
-        Serial.print("    merkle element    "); Serial.print(k); Serial.print(": "); Serial.println(merkle_element);
-        #endif
+#ifdef DEBUG_MINING
+        logDBG("    merkle element    %d: $s\n", k, merkle_element);
+#endif
         for (size_t i = 0; i < 32; i++) {
           merkle_concatenated[i] = mMiner.merkle_result[i];
           merkle_concatenated[32 + i] = bytearray[i];
         }
 
-        #ifdef DEBUG_MINING
-        Serial.print("    merkle element    "); Serial.print(k); Serial.print(": "); Serial.println(merkle_element);
-        Serial.print("    merkle concatenated: ");
+#ifdef DEBUG_MINING
+        logDBG("    merkle concatenated: ");
         for (size_t i = 0; i < 64; i++)
-            Serial.printf("%02x", merkle_concatenated[i]);
-        Serial.println("");
-        #endif
+            logDBG("%02x", merkle_concatenated[i]);
+        logDBG("\n");
+#endif
 
         mbedtls_sha256_context ctx;
         mbedtls_sha256_init(&ctx);
@@ -287,23 +287,23 @@ miner_data calculateMiningData(mining_subscribe& mWorker, mining_job mJob){
         mbedtls_sha256_finish_ret(&ctx, mMiner.merkle_result);
         mbedtls_sha256_free(&ctx);
 
-        #ifdef DEBUG_MINING
-        Serial.print("    merkle sha         : ");
+#ifdef DEBUG_MINING
+        logDBG("    merkle sha         : ");
         for (size_t i = 0; i < 32; i++)
-            Serial.printf("%02x", mMiner.merkle_result[i]);
-        Serial.println("");
-        #endif
+            logDBG("%02x", mMiner.merkle_result[i]);
+        logDBG("\n");
+#endif
     }
-    // merkle root from merkle_result
 
-    Serial.print("    merkle sha         : ");
+    // merkle root from merkle_result
+    logDBG("    merkle sha         : ");
     char merkle_root[65];
     for (int i = 0; i < 32; i++) {
-      Serial.printf("%02x", mMiner.merkle_result[i]);
+      logDBG("%02x", mMiner.merkle_result[i]);
       snprintf(&merkle_root[i*2], 3, "%02x", mMiner.merkle_result[i]);
     }
     merkle_root[65] = 0;
-    Serial.println("");
+    logDBG("\n");
 
     // calculate blockheader
     // j.block_header = ''.join([j.version, j.prevhash, merkle_root, j.ntime, j.nbits])
@@ -313,10 +313,10 @@ miner_data calculateMiningData(mining_subscribe& mWorker, mining_job mJob){
     //uint8_t bytearray_blockheader[str_len];
     res = to_byte_array(blockheader.c_str(), str_len*2, mMiner.bytearray_blockheader);
 
-    #ifdef DEBUG_MINING
-    Serial.println("    blockheader: "); Serial.print(blockheader);
-    Serial.println("    blockheader bytes "); Serial.print(str_len); Serial.print(" -> ");
-    #endif
+#ifdef DEBUG_MINING
+    logDBG("    blockheader: %s\n", blockheader);
+    logDBG("    blockheader bytes %d\n", str_len);
+#endif
 
     // reverse version
     uint8_t buff;
@@ -375,44 +375,58 @@ miner_data calculateMiningData(mining_subscribe& mWorker, mining_job mJob){
     }
 
 
-    #ifdef DEBUG_MINING
-    Serial.print(" >>> bytearray_blockheader     : ");
+#ifdef DEBUG_MINING
+    logDBG(" >>> bytearray_blockheader     : ");
     for (size_t i = 0; i < 4; i++)
-        Serial.printf("%02x", mMiner.bytearray_blockheader[i]);
-    Serial.println("");
-    Serial.print("version     ");
+        logDBG("%02x", mMiner.bytearray_blockheader[i]);
+    logDBG("\n");
+    logDBG("version     ");
     for (size_t i = 0; i < 4; i++)
-        Serial.printf("%02x", mMiner.bytearray_blockheader[i]);
-    Serial.println("");
-    Serial.print("prev hash   ");
+        logDBG("%02x", mMiner.bytearray_blockheader[i]);
+    logDBG("\n");
+    logDBG("prev hash   ");
     for (size_t i = 4; i < 4+32; i++)
-        Serial.printf("%02x", mMiner.bytearray_blockheader[i]);
-    Serial.println("");
-    Serial.print("merkle root ");
+        logDBG("%02x", mMiner.bytearray_blockheader[i]);
+    logDBG("\n");
+    logDBG("merkle root ");
     for (size_t i = 36; i < 36+32; i++)
-        Serial.printf("%02x", mMiner.bytearray_blockheader[i]);
-    Serial.println("");
-    Serial.print("ntime       ");
+        logDBG("%02x", mMiner.bytearray_blockheader[i]);
+    logDBG("\n");
+    logDBG("ntime       ");
     for (size_t i = 68; i < 68+4; i++)
-        Serial.printf("%02x", mMiner.bytearray_blockheader[i]);
-    Serial.println("");
-    Serial.print("nbits       ");
+        logDBG("%02x", mMiner.bytearray_blockheader[i]);
+    logDBG("\n");
+    logDBG("nbits       ");
     for (size_t i = 72; i < 72+4; i++)
-        Serial.printf("%02x", mMiner.bytearray_blockheader[i]);
-    Serial.println("");
-    Serial.print("nonce       ");
+        logDBG("%02x", mMiner.bytearray_blockheader[i]);
+    logDBG("\n");
+    logDBG("nonce       ");
     for (size_t i = 76; i < 76+4; i++)
-        Serial.printf("%02x", mMiner.bytearray_blockheader[i]);
-    Serial.println("");
-    Serial.println("bytearray_blockheader: ");
+        logDBG("%02x", mMiner.bytearray_blockheader[i]);
+    logDBG("\n");
+    logDBG("bytearray_blockheader: ");
     for (size_t i = 0; i < str_len; i++) {
-      Serial.printf("%02x", mMiner.bytearray_blockheader[i]);
+      logDBG("%02x", mMiner.bytearray_blockheader[i]);
     }
-    Serial.println("");
-    #endif
+    logDBG("\n");
+#endif
   return mMiner;
 }
 
+/* Format examples:
+123457 - 123k
+12345.7 - 12.3k
+1234.57 - 1.23k
+123.457 - 123
+12.3457 - 12.3
+1.23457 - 1.23
+0.123457 - 123m
+0.0123457 - 12.3m
+0.00123457 - 1.23m
+0.000123457 - 123u
+0.0000123457 - 12.3u
+0.00000123457 - 1.23u
+*/
 static const char SI_PFX[] = {'a', 'f', 'p', 'n', /*'µ'*/ 'u', 'm', ' ', 'k', 'M', 'G', 'T', 'E', 'Z'};
 String numFormat(const char *frmt, double val, char &siPrefix) {
   char fstr[16];

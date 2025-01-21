@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <ArduinoJson.h>
 #include <WiFi.h>
+#include "SerialLog.h"
 #include "stratum.h"
 #include "cJSON.h"
 #include <string.h>
@@ -39,7 +40,7 @@ bool checkError(const StaticJsonDocument<BUFFER_JSON_DOC> doc) {
 
   if (doc["error"].size() == 0) return false;
 
-  Serial.printf("ERROR: %d | reason: %s \n", (const int) doc["error"][0], (const char*) doc["error"][1]);
+  logERR("ERROR: %d | reason: %s \n", (const int) doc["error"][0], (const char*) doc["error"][1]);
 
   return true;
 }
@@ -57,8 +58,8 @@ bool tx_mining_subscribe(WiFiClient& wifi, mining_subscribe& mSubscribe)
     id = 1; //Initialize id messages
     sprintf(payload, "{\"id\": %u, \"method\": \"mining.subscribe\", \"params\": [\"%s/%s\"]}\n", id, MINER_NAME, CURRENT_VERSION);
 
-    Serial.printf("[WORKER] ==> Mining subscribe\n");
-    Serial.print("  Sending  : "); Serial.println(payload);
+    logINF("[WORKER] ==> Mining subscribe\n");
+    logDBG("  Sending  : %s\n", payload);
     wifi.print(payload);
 
     vTaskDelay(200 / portTICK_PERIOD_MS); //Small delay
@@ -67,13 +68,13 @@ bool tx_mining_subscribe(WiFiClient& wifi, mining_subscribe& mSubscribe)
     if (!parse_mining_subscribe(line, mSubscribe)) return false;
 
 
-    Serial.print("    sub_details: "); Serial.println(mSubscribe.sub_details);
-    Serial.print("    extranonce1: "); Serial.println(mSubscribe.extranonce1);
-    Serial.print("    extranonce2_size: "); Serial.println(mSubscribe.extranonce2_size);
+    logINF("    sub_details: %s\n", mSubscribe.sub_details.c_str());
+    logINF("    extranonce1: %s\n", mSubscribe.extranonce1.c_str());
+    logINF("    extranonce2_size: %u\n", mSubscribe.extranonce2_size);
 
     if ((mSubscribe.extranonce1.length() == 0) ) {
-        Serial.printf("[WORKER] >>>>>>>>> Work aborted\n");
-        Serial.printf("extranonce1 length: %u \n", mSubscribe.extranonce1.length());
+        logINF("[WORKER] >>>>>>>>> Work aborted\n");
+        logINF("extranonce1 length: %u \n", mSubscribe.extranonce1.length());
         doc.clear();
         doc.garbageCollect();
         return false;
@@ -84,7 +85,7 @@ bool tx_mining_subscribe(WiFiClient& wifi, mining_subscribe& mSubscribe)
 bool parse_mining_subscribe(String line, mining_subscribe& mSubscribe)
 {
     if (!verifyPayload(&line)) return false;
-    Serial.print("  Receiving: "); Serial.println(line);
+    logDBG("  Receiving: %s\n", line);
 
     DeserializationError error = deserializeJson(doc, line);
 
@@ -121,8 +122,8 @@ bool tx_mining_auth(WiFiClient& wifi, const char * user, const char * pass)
     sprintf(payload, "{\"params\": [\"%s\", \"%s\"], \"id\": %u, \"method\": \"mining.authorize\"}\n",
       user, pass, id);
 
-    Serial.printf("[WORKER] ==> Autorize work\n");
-    Serial.print("  Sending  : "); Serial.println(payload);
+    logINF("[WORKER] ==> Autorize work\n");
+    logDBG("  Sending  : %s\n", payload);
     wifi.print(payload);
 
     vTaskDelay(200 / portTICK_PERIOD_MS); //Small delay
@@ -137,7 +138,7 @@ bool tx_mining_auth(WiFiClient& wifi, const char * user, const char * pass)
 stratum_method parse_mining_method(String line)
 {
     if (!verifyPayload(&line)) return STRATUM_PARSE_ERROR;
-    Serial.print("  Receiving: "); Serial.println(line);
+    logINF("  Received: %s\n", line);
 
     DeserializationError error = deserializeJson(doc, line);
 
@@ -163,7 +164,7 @@ stratum_method parse_mining_method(String line)
 
 bool parse_mining_notify(String line, mining_job& mJob)
 {
-    Serial.println("    Parsing Method [MINING NOTIFY]");
+    logINF("    Parsing Method [MINING NOTIFY]");
     if (!verifyPayload(&line)) return false;
 
     DeserializationError error = deserializeJson(doc, line);
@@ -181,20 +182,20 @@ bool parse_mining_notify(String line, mining_job& mJob)
     mJob.ntime = String((const char*) doc["params"][7]);
     mJob.clean_jobs = doc["params"][8]; //bool
 
-    #ifdef DEBUG_MINING
-    Serial.print("    job_id: "); Serial.println(mJob.job_id);
-    Serial.print("    prevhash: "); Serial.println(mJob.prev_block_hash);
-    Serial.print("    coinb1: "); Serial.println(mJob.coinb1);
-    Serial.print("    coinb2: "); Serial.println(mJob.coinb2);
-    Serial.print("    merkle_branch size: "); Serial.println(mJob.merkle_branch.size());
-    Serial.print("    version: "); Serial.println(mJob.version);
-    Serial.print("    nbits: "); Serial.println(mJob.nbits);
-    Serial.print("    ntime: "); Serial.println(mJob.ntime);
-    Serial.print("    clean_jobs: "); Serial.println(mJob.clean_jobs);
-    #endif
+#ifdef DEBUG_MINING
+    logDBG("    job_id: %s\n", mJob.job_id);
+    logDBG("    prevhash: %s\n", mJob.prev_block_hash);
+    logDBG("    coinb1: %s\n", mJob.coinb1);
+    logDBG("    coinb2: %s\n", mJob.coinb2);
+    logDBG("    merkle_branch size: %s\n", mJob.merkle_branch.size());
+    logDBG("    version: %s\n", mJob.version);
+    logDBG("    nbits: %s\n", mJob.nbits);
+    logDBG("    ntime: %s\n", mJob.ntime);
+    logDBG("    clean_jobs: %s\n", mJob.clean_jobs);
+#endif
     //Check if parameters where correctly received
     if (checkError(doc)) {
-      Serial.printf("[WORKER] >>>>>>>>> Work aborted\n");
+      logERR("[WORKER] >>>>>>>>> Work aborted\n");
       return false;
     }
     return true;
@@ -215,16 +216,14 @@ bool tx_mining_submit(WiFiClient& wifi, mining_subscribe mWorker, mining_job mJo
         mJob.ntime.c_str(),
         String(nonce, HEX).c_str()
         );
-    Serial.print("  Sending  : "); Serial.print(payload);
+    logDBG("  Sending  : %s\n", payload);
     wifi.print(payload);
-    //Serial.print("  Receiving: "); Serial.println(wifi.readStringUntil('\n'));
-
     return true;
 }
 
 bool parse_mining_set_difficulty(String line, double& difficulty)
 {
-    Serial.println("    Parsing Method [SET DIFFICULTY]");
+    logINF("    Parsing Method [SET DIFFICULTY]\n");
     if (!verifyPayload(&line)) return false;
 
     DeserializationError error = deserializeJson(doc, line);
@@ -232,8 +231,8 @@ bool parse_mining_set_difficulty(String line, double& difficulty)
     if (error) return false;
     if (!doc.containsKey("params")) return false;
 
-    Serial.print("    difficulty: "); Serial.println((double)doc["params"][0],12);
-    difficulty = (double)doc["params"][0];
+    difficulty = doc["params"][0].as<double>();
+    logINF("    difficulty: %g\n", difficulty);
 
     return true;
 }
@@ -245,7 +244,6 @@ bool tx_suggest_difficulty(WiFiClient& wifi, double difficulty)
     id = getNextId(id);
     sprintf(payload, "{\"id\": %d, \"method\": \"mining.suggest_difficulty\", \"params\": [%.10g]}\n", id, difficulty);
 
-    Serial.print("  Sending  : "); Serial.print(payload);
+    logINF("  Sending  : %s\n", payload);
     return wifi.print(payload);
-
 }

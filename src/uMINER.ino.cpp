@@ -1,12 +1,13 @@
 
-#include <Wire.h>
-
 #include <Arduino.h>
+//#include <Wire.h>
 #include <WiFi.h>
 #include <WebServer.h>
 #include <esp_task_wdt.h>
 
-#include "mbedtls/md.h"
+//#include "mbedtls/md.h"
+#include "SerialLog.h"
+#include "drivers/devices/device.h"
 #include "Configuration.h"
 #include "mining.h"
 #include "monitor.h"
@@ -23,37 +24,30 @@
 //15 minutes WDT for miner task
 #define WDT_MINER_TIMEOUT 900
 
-  /**********************⚡ GLOBAL Vars *******************************/
-#ifdef PIN_BUTTON_1
-  OneButton button1(PIN_BUTTON_1);
-#endif
-
-  ButtonCntrl dsplButton(PIN_BUTTON_SCREEN, MAIN_LOOP_INTERVAL);
-  ButtonCntrl screenButton(PIN_BUTTON_2, MAIN_LOOP_INTERVAL);
-#ifdef PIN_BUTTON_2
-  // OneButton button2(PIN_BUTTON_2);
-#endif
-
-#ifdef TOUCH_ENABLE
-extern TouchHandler touchHandler;
-#endif
+/*
+ *********************⚡ GLOBAL Vars ******************************
+ */
+ButtonCntrl dsplButton(PIN_BUTTON_1, MAIN_LOOP_INTERVAL);
+ButtonCntrl screenButton(PIN_BUTTON_2, MAIN_LOOP_INTERVAL);
 
 extern monitor_data mMonitor;
 
 #ifdef SD_ID
-  SDCard SDCrd = SDCard(SD_ID);
+SDCard SDCrd = SDCard(SD_ID);
 #else
-  SDCard SDCrd = SDCard();
+SDCard SDCrd = SDCard();
 #endif
-  TSettings Settings;
+TSettings Settings;
 
-  unsigned long start = millis();
-  const char *ntpServer = "pool.ntp.org";
+unsigned long start = millis();
+const char *ntpServer = "pool.ntp.org";
 
-  using namespace std::placeholders;  // for _1, _2, _3...
+using namespace std::placeholders;  // for _1, _2, _3...
 
-  /********* INIT *****/
-  void setup() {
+/*
+ ******** INIT *******
+ */
+void setup() {
     // Init pin 15 to eneble 5V external power (LilyGo bug)
   #ifdef PIN_ENABLE5V
       pinMode(PIN_ENABLE5V, OUTPUT);
@@ -80,7 +74,8 @@ extern monitor_data mMonitor;
   dsplButton.LongPress = handleDisplayAdjust;
 
   /******** INIT μMINER ************/
-  Serial.println("uMINER starting......");
+  logALL("***\n");
+  logALL("***\n*** uMINER starting......\n");
 
   /******** INIT DISPLAY ************/
   initDisplay();
@@ -106,7 +101,7 @@ extern monitor_data mMonitor;
 
   /******** CREATE TASK TO PRINT SCREEN *****/
   // Higher prio monitor task
-  Serial.println("\nInitiating tasks...");
+  logINF("Creating tasks...\n");
   BaseType_t res1 = xTaskCreatePinnedToCore(runMonitor, "Monitor", 10000, nullptr, 4, NULL, 1);
   BaseType_t res2 = xTaskCreatePinnedToCore(runStratumWorker, "Stratum", 15000, nullptr, 3, NULL, 1);
 

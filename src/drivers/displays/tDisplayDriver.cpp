@@ -8,6 +8,7 @@
 #include "media/Free_Fonts.h"
 #include "version.h"
 #include "monitor.h"
+#include "SerialLog.h"
 #include "OpenFontRender.h"
 #include "rotation.h"
 #include "drivers/storage/storage.h"
@@ -43,7 +44,7 @@ void tDisplay_Init(void) {
   // Load the font and check it can be read OK
   //if (render.loadFont(DigitalNumbers, sizeof(DigitalNumbers)))
   if (render.loadFont(Obitron, sizeof(Obitron))) {
-    Serial.println("Initialise error");
+    logERR("Error loading font!");
     return;
   }
 }
@@ -51,7 +52,7 @@ void setBrightness(char value);
 
 int tDisplay_AlternateScreenState(void) {
   int screen_state = digitalRead(TFT_BL);
-  Serial.println("Switching display state");
+  logDBG("Switching display state");
   screen_state = !screen_state;
   setBrightness(screen_state ? 16 : 0);
   return screen_state;
@@ -212,6 +213,11 @@ void tDisplay_MinerStatus(unsigned long mElapsed) {
   render.drawString(data.poolUser.c_str(), 200, 62, 0x7b80);
   render.drawString(data.sessId.c_str(), 200, 82, 0x7b80);
   render.drawString(data.bestDiff.c_str(), 200, 106, 0x7b80);
+
+  // Mem
+  render.setFontSize(13);
+  render.drawString(data.minFreeHeap.c_str(), 200, 132, 0x7b80);
+  render.drawString(data.minStack.c_str(), 257, 132, 0x7b80);
 
   // Hashrate
   render.setFontSize(22);

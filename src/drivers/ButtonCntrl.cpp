@@ -1,6 +1,7 @@
 ﻿#include <Arduino.h>
 #include <math.h>
 
+#include "SerialLog.h"
 #include "ButtonCntrl.h"
 #include "timeconst.h"
 
@@ -37,7 +38,7 @@ void ButtonCntrl::Update() {
   if (   nullptr != LongPress
       && LongPress(elapsed - BTN_SINGLE_CLICK_DELAY, IVAL)) return;   //keep button pressed
 
-  Serial.println("Long press abort");
+  logDBG("Long press abort");
   startPress = 0;
 }
 
