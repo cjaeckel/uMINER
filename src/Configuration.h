@@ -17,7 +17,7 @@ private:
   WiFiManagerParameter pool_fld {"Poolurl", "Pool url"};
   WiFiManagerParameter port_fld {"Poolport", "Pool port"};
   WiFiManagerParameter btcAddr_fld {"btcAddress", "Your BTC address"};
-  WiFiManagerParameter tmzone_fld {"TimeZone", "TimeZone fromUTC (-12/+12)"};
+  WiFiManagerParameter tmzone_fld {"TimeZone", "TimeZone"};
   WiFiManagerParameter poolPwd_fld {"Poolpassword - Optional", "Pool password"};
   void handleConfigStart();
 

@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <WiFi.h>
+#include <time.h>
 #include "mbedtls/md.h"
 #include "HTTPClient.h"
 #include <NTPClient.h>
@@ -38,13 +39,14 @@ String *BTCaddr = NULL;
 
 void setup_monitor(void){
     /******** TIME ZONE SETTING *****/
-
+    setenv("TZ", Settings.PosixTZ.c_str(), 1);  //set POSIX timezone in environment TZ
+    tzset();
     timeClient.begin();
-
-    // Adjust offset depending on your zone
-    // GMT +2 in seconds (Europa Central)
-    timeClient.setTimeOffset(3600 * Settings.Timezone);   //***TODO: use time zone rule
-
+    timeClient.update();
+    time_t utc = timeClient.getEpochTime();
+    struct tm tm = *localtime(&utc);
+    time_t ltm = mktime(&tm); //local time
+    timeClient.setTimeOffset(utc - ltm);    // Adjust offset depending on your zone
     logINF("TimeClient setup done\n");
 }
 

@@ -40,7 +40,7 @@ Configuration::Configuration(TSettings &set) : settings(set) {
   poolPwd_fld.setValue(settings.PoolPassword.c_str(), 80);
   port_fld.setValue(String(settings.PoolPort).c_str(), 7);
   btcAddr_fld.setValue(settings.BtcWallet.c_str(), 80);
-  tmzone_fld.setValue(String(settings.Timezone).c_str(), 3);
+  tmzone_fld.setValue(String(settings.PosixTZ).c_str(), 80);
 }
 
 bool Configuration::Reset(int sinceMs, int interval) {
@@ -75,7 +75,7 @@ void Configuration::handleConfigInput() {
   settings.PoolPort = atoi(port_fld.getValue());
   settings.PoolPassword= poolPwd_fld.getValue();
   settings.BtcWallet = btcAddr_fld.getValue();
-  settings.Timezone = atoi(tmzone_fld.getValue());
+  settings.PosixTZ = tmzone_fld.getValue();
   settings.saveStats = false; //(strncmp(save_stats_to_nvs.getValue(), "T", 1) == 0);
   nvMem.saveConfig(&settings);
 }
@@ -110,17 +110,20 @@ void Configuration::Configure() {
   wifiCfg.setAPCallback(std::bind(&Configuration::handleConfigStart, this));
 
   // Add all defined parameters
+  WiFiManagerParameter altSSID_html("<hr><br><label style=\"font-weight: bold;margin-bottom: 25px;display: inline-block;\">Alt. SSID</label>");
+  wifiCfg.addParameter(&altSSID_html);
+  wifiCfg.addParameter(&ssid2_fld);
   wifiCfg.addParameter(&ssid2_fld);
   wifiCfg.addParameter(&pwd2_fld);
   wifiCfg.addParameter(&ssid3_fld);
   wifiCfg.addParameter(&pwd3_fld);
+  WiFiManagerParameter pool_html("<hr><br><label style=\"font-weight: bold;margin-bottom: 25px;display: inline-block;\">Pool</label>");
+  wifiCfg.addParameter(&pool_html);
   wifiCfg.addParameter(&pool_fld);
   wifiCfg.addParameter(&port_fld);
   wifiCfg.addParameter(&poolPwd_fld);
   wifiCfg.addParameter(&btcAddr_fld);
   wifiCfg.addParameter(&tmzone_fld);
-  // wm.addParameter(&features_html);
-  // wm.addParameter(&save_stats_to_nvs);
 
   wifiCfg.setCaptivePortalEnable(true);
   wifiCfg.setConfigPortalBlocking(true);
